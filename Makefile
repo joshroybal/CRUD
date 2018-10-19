@@ -13,5 +13,5 @@ default: classes
 classes: $(CLASSES:.java=.class)
 
 clean:
-	del *.class *~
+	$(RM) *.class *~
 
