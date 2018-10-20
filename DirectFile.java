@@ -10,35 +10,18 @@ class DirectFile
    {  String key = record.substring(0, FLDSIZ).trim();
       RandomAccessFile iofile = new RandomAccessFile(filename, "rw");
 
-      String tmp = new String();
-      String oldrec = new String();
-      byte[] buffer = new byte[RECSIZ];
-      long idx = 0;
-      while ( idx < iofile.length() )  // find insertion point
-      {  iofile.read(buffer);
-         tmp = new String(buffer, 0, RECSIZ);
-         if ( key.compareTo(tmp.substring(0, FLDSIZ).trim()) == 0 )
-         {  iofile.close();
-            return false;
-         }
-         if (key.compareTo(tmp.substring(0, FLDSIZ).trim()) < 0) break;
-         idx += RECSIZ;
-      }
-
-      long tag = idx;
-      long eof = iofile.length() + RECSIZ;
-
-      idx = iofile.length();
-      while ( idx > tag )
-      {  iofile.seek(idx - RECSIZ);
+      byte buffer[] = new byte[RECSIZ];
+      long pos = iofile.length();
+      while ( pos > 0 )
+      {  iofile.seek(pos - RECSIZ);
          iofile.read(buffer);
-         iofile.seek(idx);
+         String prev = new String(buffer).substring(0, FLDSIZ).trim();
+         if ( key.compareTo(prev) > 0 ) break;
+         iofile.seek(pos);
          iofile.write(buffer);
-         idx -= RECSIZ;
+         pos -= RECSIZ;
       }
-
-      // insert the new record
-      iofile.seek(tag);
+      iofile.seek(pos);
       iofile.write(record.getBytes());
       iofile.close();
       return true;
@@ -128,6 +111,7 @@ class DirectFile
       return false;
    }
 
+   // move records after deleted item up and reset file size
    public static void truncate(RandomAccessFile iofile, long pos)
       throws IOException
    {  byte[] buffer = new byte[RECSIZ];
@@ -137,7 +121,6 @@ class DirectFile
          iofile.read(buffer);
          iofile.seek(pos);
          iofile.write(buffer);
-         System.out.println(new String(buffer).trim());
          pos += RECSIZ;
       }
       iofile.setLength(eof-RECSIZ);
